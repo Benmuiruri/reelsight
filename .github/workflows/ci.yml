@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        node: [24, 26]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      - name: Install ffmpeg (Ubuntu)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Install ffmpeg (macOS)
+        if: runner.os == 'macOS'
+        run: HOMEBREW_NO_AUTO_UPDATE=1 brew install ffmpeg
+      - name: Check ffmpeg filters
+        run: |
+          filters=$(ffmpeg -hide_banner -filters | awk '{print $2}')
+          for f in tile scdet select metadata scale; do
+            echo "$filters" | grep -qx "$f" || { echo "missing ffmpeg filter: $f"; exit 1; }
+          done
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
