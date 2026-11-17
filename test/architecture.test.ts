@@ -11,7 +11,11 @@ async function importErrors(file: string, code: string): Promise<string[]> {
   const fatal = result?.messages.find((m) => m.fatal);
   if (fatal) throw new Error(fatal.message);
   return (result?.messages ?? [])
-    .filter((m) => m.ruleId === "@typescript-eslint/no-restricted-imports")
+    .filter(
+      (m) =>
+        m.ruleId === "@typescript-eslint/no-restricted-imports" ||
+        m.ruleId === "no-restricted-syntax",
+    )
     .map((m) => m.message);
 }
 
@@ -28,6 +32,13 @@ describe("import direction", () => {
     ["src/cli/x.ts", `import { a } from "../domain/time.js";`],
     ["src/mcp/x.ts", `import { a } from "../cli/main.js";`],
     ["src/mcp/x.ts", `import { a } from "../domain/time.js";`],
+    ["src/domain/x.ts", `import { a } from "../util/x.js";`],
+    ["src/adapters/x.ts", `import { a } from "../util/x.js";`],
+    ["src/core/x.ts", `import { a } from "../util/x.js";`],
+    ["src/cli/x.ts", `import { a } from "../util/x.js";`],
+    ["src/domain/x.ts", `await import("./time.js");`],
+    ["src/core/sub/x.ts", `export const a = 1;`],
+    ["src/domain/sub/deeper/x.ts", `export const a = 1;`],
   ])("%s rejects %s", async (file, code) => {
     expect(await importErrors(file, code)).toHaveLength(1);
   });

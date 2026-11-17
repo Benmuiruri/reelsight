@@ -20,6 +20,32 @@ export default tseslint.config(
       },
     },
   },
+  {
+    files: ["src/**"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "ImportExpression",
+          message:
+            "No dynamic import(): the import-direction rule cannot see it.",
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/*/*/**/*"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "Program",
+          message:
+            "src/ folders stay flat: the import-direction rule only handles one level.",
+        },
+      ],
+    },
+  },
   forbid(["src/domain/**"], {
     regex: "^\\.\\./",
     message: "domain/ imports nothing outside domain/.",
@@ -31,8 +57,8 @@ export default tseslint.config(
   forbid(
     ["src/core/**"],
     {
-      regex: "^\\.\\./(cli|mcp|compose)",
-      message: "core/ may not import front ends or compose.ts.",
+      regex: "^\\.\\./(?!domain/|adapters/)",
+      message: "core/ may import only domain/ and adapter types.",
     },
     {
       regex: "^\\.\\./adapters/",
